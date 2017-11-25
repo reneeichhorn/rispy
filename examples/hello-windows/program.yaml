@@ -1,0 +1,74 @@
+## Sample application
+##
+## Equal pseudo code (semantically):
+##
+## myBar() { return { displayString: "Hello World" } }
+##
+## void main(params) {
+##    var obj = myBar()
+##    if (params.operationSystem.type === "windows") {
+##       print(obj.displayString)
+##    }
+## }
+
+
+# Namespace declaration
+namespaces:
+  foo:
+    my-bar:
+      type: object
+      rules:
+        - targets: self
+          type: immutable
+        - targets: displayString
+          type: immutable
+        - targets: displayString
+          type: const
+      initialState:
+        displayString: "Hello World"
+      converter:
+        as-string:
+          type: accessor
+          what: displayString
+
+
+# Imported flows declaration
+importedFlows:
+  - name: application-start # type: protected
+    from: core/application-start
+  - name: stdout # type: stream
+    from: core/terminal/stdout
+
+
+# Own flows declaration
+ownFlows:
+  foo/my-bar/test-flow:
+    accepts:
+      - type: foo/my-bar
+    outputs:
+      - type: none
+
+
+# Flow definition
+flowsDefinition:
+  application-start:
+    outputs:
+      - type: condition
+        condition:
+          type: equals
+          left: 
+            type: stream
+            expression: stream.operationSystem.type
+          right:
+            type: constant
+            expression: "windows"
+        outputs:
+          - type: intoStream
+            stream: foo/my-bar/test-flow
+            converter: none
+  foo/my-bar/test-flow:
+    outputs:
+      - type: intoStream
+        stream: stdout
+        converter: foo/my-bar/test-flow/as-string
+

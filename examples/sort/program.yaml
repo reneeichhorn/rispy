@@ -1,0 +1,138 @@
+## Sample application
+##
+## Implements a simple sorting stream
+##
+## Accepts simple integers, should print 1 1 2 3 4 6 8
+
+
+namespace:
+  util:
+    smallest-number:
+      type: object
+      initialValue:
+        smallestValue: 0
+      rules:
+        - targets: smallestValue
+          type: private
+        - targets: smallestValue
+          type: condition
+          condition:
+            type: any
+            of: 
+              type: stream
+              expression: stream
+            must:
+              type: leq
+              left: 
+                type: accesor
+                expression: smallestValue
+              right:
+                type: anyValue
+
+
+importFlows:
+  - name: application-start
+    from: core/application-start
+  - name: stdout
+    from: core/terminal/stdout
+
+
+ownFlows:
+  util/smallest-number/smallest:
+    accepts:
+      - type: stream
+        outputs:
+          - type: number
+    outputs:
+      - type: number
+
+  util/smallest-number/sorting:
+    accepts:
+      - type: stream
+        outputs:
+          - type: number
+    outputs:
+      - type: number
+
+flowDefintion:
+  # Sort constant numbers and print them immediately into stdout
+  application-start:
+    outputs:
+      - type: intoStream
+        stream: util/smallest-number/sorting
+        converter:
+          type: constant
+          constantType: stream
+          value:
+            - type: number
+              value: 4 
+            - type: number
+              value: 1
+            - type: number
+              value: 2
+            - type: number
+              value: 8
+            - type: number
+              value: 3
+            - type: number
+              value: 6
+            - type: number
+              value: 1
+        links:
+          - to: util/smallest-number/sorting
+            outputs:
+              - type: intoStream
+                stream: stdout
+                converter:
+                  type: core/converter/number/toString
+
+  # Finding out what the smallest number is in a stream
+  util/smallest-number/smallest:
+    outputs:
+      - type: mergeIntoSubstream
+        object: util/smallest-number
+        outputs:
+          - type: condition
+            condition:
+              type: lt
+              left:
+                type: accesor
+                expression: smallestValue
+              right:
+                type: stream
+                expression: stream
+              reactions:
+                - type: mutator
+                  expression: smallestValue
+                  value: 
+                    type: stream
+                    expression: stream
+          - type: ends
+            outputs:
+              - type: intoStreamOutput
+                stream: util/smallest-number
+                converter:
+                  type: accesor
+                  expression: smallestValue
+
+  # Sort numbers ascending
+  util/smallest-number/sorting:
+    outputs:
+      - type: intoStream
+        stream: util/smallest-number/smallest
+        links:
+          - to: util/smallest-number/smallest
+            outputs:
+              - type: intoStreamOutput
+                stream: util/smallest-number/sorting
+                converter:
+                  type: none
+            delink:
+              outputs:
+                - type: ends
+                  outputs:
+                  - type: intoStream
+                    stream: util/smallest-number/sorting
+                    converter:
+                      type: none
+
