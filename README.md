@@ -1,4 +1,4 @@
-# Rispy \[[Documentation](https://www.gitbook.com/book/reneeichhorn/rispy-documentation/)\]
+# Rispy \[[Documentation](https://reneeichhorn.gitbooks.io/rispy-documentation/content/)\]
 
 ## Specificiation
 
@@ -27,7 +27,7 @@ initialValue:
 
 #### 1.2.0 Rules
 
-Object rules formally describe the values during any situation.   
+Object rules formally describe the values during any situation.  
 During runtime it is garantueed that all rules apply during any situation:
 
 * after creation

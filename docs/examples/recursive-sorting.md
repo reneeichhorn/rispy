@@ -162,9 +162,9 @@ Now it gets a little bit more complex.. Let's introduce 3 new operations:
 
 ### mergeIntoSubstream
 
-The simplest way to describe a substream is an anonymous function. It is a stream that doesn't have any name nor will be visible to the outside. Instead of just intoSubstream we're using mergeIntoSubstream though. Remember that we're putting a stream of numbers into the sorting stream. Since we want to look at all the individual numbers we need to merge them. Merging just means  putting the content of the stream into a stream. So instead of putting whatever comes into lowest to the substream we're putting whatever is emitted from whatever comes into stream. 
+The simplest way to describe a substream is an anonymous function. It is a stream that doesn't have any name nor will be visible to the outside. Instead of just intoSubstream we're using mergeIntoSubstream though. Remember that we're putting a stream of numbers into the sorting stream. Since we want to look at all the individual numbers we need to merge them. Merging just means  putting the content of the stream into a stream. So instead of putting whatever comes into lowest to the substream we're putting whatever is emitted from whatever comes into stream.
 
-One new option you might have noticed is the object option. This binds a object to the stream, meaning that whenever this stream is created it will assign an object to it and initialize it. 
+One new option you might have noticed is the object option. This binds a object to the stream, meaning that whenever this stream is created it will assign an object to it and initialize it.
 
 ### condition
 
@@ -214,13 +214,11 @@ In our sorting example its very simple, we put multiple numbers into the lowest 
 
 Lets have quick look at the performance of the stream we just created. The good thing is the complexity is always the same no matter how badly it is sorted.
 
-The complexity is: 
-$$
-O(n) = 1 + 2 +3 + ... + (n-2) + (n-1) + n
-$$
- written a little bit simpler: 
-$$
-O(n) = (n(n+1))/2
-$$
+The complexity is:
 
+$$O(n) = 1 + 2 +3 + ... + (n-2) + (n-1) + n$$
+
+written a little bit simpler:
+
+$$O(n) = (n(n+1))/2$$
 
