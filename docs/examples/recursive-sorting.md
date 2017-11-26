@@ -112,7 +112,6 @@ application-start:
               stream: stdout
               converter:
                 type: core/converter/number/toString
-
 ```
 
 Let's pretend for now that the the sorting stream is already working as we intended it to be. Therefore let's start with the application start. Whenever the application-start emits something we using the intoStream operation. For the application-start this will of course only happen once. The intoStream operation simply puts what ever was emitted in the parent stream into another stream. It this case it puts whatever application-start emits into the util/lowest-number/sorting stream. Of course the output of the application-start is nothing that our sorting stream could take care of. To change what data goes into the sorting stream we can define a converter. There are multiple types of converter for now lets only care about the constant converter.
@@ -125,7 +124,103 @@ The next thing we're going to talk about are links. The intoStream operation sup
 
 You already noticed that a stream can take value and it will output values. Putting something into stream might trigger many things. With a link we can actually follow these "triggers". For example you'd have a logging stream. The way you implemented it, it will whenever a "log" comes in it will add some formatting and then print it into stdout. So whatever you put into it, at some point will be redirected to the stdout \(converted to fit into the std stream definition\)
 
-A link just allows you to "follow" what you just put into a stream until it reaches a certain destination. The simplest use case for this is if you want to get a "return" value of something you put into a stream. In our case we want to "follow" or unsorted numbers to the point they are sorted and then put them into stdout using the core/converter/number/toString converter \(stdout only accepts strings\) 
+A link just allows you to "follow" what you just put into a stream until it reaches a certain destination. The simplest use case for this is if you want to get a "return" value of something you put into a stream. In our case we want to "follow" or unsorted numbers to the point they are sorted and then put them into stdout using the core/converter/number/toString converter \(stdout only accepts strings\)
 
+## The lowest stream
+
+```
+util/lowest-number/lowest:
+  outputs:
+    - type: mergeIntoSubstream
+      object: util/lowest-number
+      outputs:
+        - type: condition
+          condition:
+            type: lt
+            left:
+              type: accesor
+              expression: lowestValue
+            right:
+              type: stream
+              expression: stream
+            reactions:
+              - type: mutator
+                expression: lowestValue
+                value: 
+                  type: stream
+                  expression: stream
+        - type: ends
+          outputs:
+            - type: intoStreamOutput
+              stream: util/lowest-number
+              converter:
+                type: accesor
+                expression: lowestValue
+```
+
+Now it gets a little bit more complex.. Let's introduce 3 new operations:
+
+### mergeIntoSubstream
+
+The simplest way to describe a substream is an anonymous function. It is a stream that doesn't have any name nor will be visible to the outside. Instead of just intoSubstream we're using mergeIntoSubstream though. Remember that we're putting a stream of numbers into the sorting stream. Since we want to look at all the individual numbers we need to merge them. Merging just means  putting the content of the stream into a stream. So instead of putting whatever comes into lowest to the substream we're putting whatever is emitted from whatever comes into stream. 
+
+One new option you might have noticed is the object option. This binds a object to the stream, meaning that whenever this stream is created it will assign an object to it and initialize it. 
+
+### condition
+
+The condition operation is a very simple one, this is just normal branching if you want to something if a certain condition applies the you can use the condition operation. You might also have noticed the reactions option. This one is actually available on all operations. A reaction allows you to modify the assigned object. In this case it mutates the value to the current number if it is smaller than the current value.
+
+### ends
+
+Every stream ends at some point, either when the program exits or when the stream is done with whatever it was doing. In our case the stream is done when all of our numbers have been processed.
+
+### intoStreamOutput
+
+This one is very similar to the intoStream operation that we already know. In RISPY a stream can receive values and it can output values. intoStream puts something into a stream. With intoStreamOutput we tell a stream to output something. Note that the target stream can only be the parent stream.
+
+## The sorting stream
+
+```
+util/lowest-number/sorting:
+  outputs:
+    - type: intoStream
+      stream: util/lowest-number/lowest
+      links:
+        - to: util/lowest-number/lowest
+          outputs:
+            - type: intoStreamOutput
+              stream: util/lowest-number/sorting
+              converter:
+                type: none
+          delink:
+            outputs:
+              - type: ends
+                outputs:
+                - type: intoStream
+                  stream: util/lowest-number/sorting
+                  converter:
+                    type: none
+```
+
+Now that we have a stream that gives us the lowest number of a stream we can easily write a recursive stream that sorts the whole stream. This works the same as any "normal" recursive function. One new thing we need to introduce first though is the delink.
+
+### Delinking
+
+We already know what a link is but what is delink? It's quite simple, we already know that a link is following the input til it reaches a certain destination. What happens with the input that didn't reach this destination though? There we go and this exactly where a delink comes in, whenever the desired destination is not reached we can use the delink to follow inputs that didn't reach the destination.
+
+In our sorting example its very simple, we put multiple numbers into the lowest stream. The lowest number will reach the output of the lowest stream the rest won't. therefore we just put the lowest number into our own output stream and then we put the remaining numbers again into the sorting stream.
+
+## Performance
+
+Lets have quick look at the performance of the stream we just created. The good thing is the complexity is always the same no matter how badly it is sorted.
+
+The complexity is: 
+$$
+O(n) = 1 + 2 +3 + ... + (n-2) + (n-1) + n
+$$
+ written a little bit simpler: 
+$$
+O(n) = (n(n+1))/2
+$$
 
 
