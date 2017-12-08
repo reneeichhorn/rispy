@@ -6,28 +6,27 @@
 
 
 namespace:
-  util:
-    smallest-number:
-      type: object
-      initialValue:
-        smallestValue: 0
-      rules:
-        - targets: smallestValue
-          type: private
-        - targets: smallestValue
-          type: condition
-          condition:
-            type: any
-            of: 
-              type: stream
-              expression: stream
-            must:
-              type: leq
-              left: 
-                type: accesor
-                expression: smallestValue
-              right:
-                type: anyValue
+  util/smallest-number:
+    type: object
+    initialValue:
+      smallestValue: 99999999
+    rules:
+      - targets: smallestValue
+        type: private
+      - targets: smallestValue
+        type: condition
+        condition:
+          type: any
+          of: 
+            type: stream
+            expression: stream
+          must:
+            type: leq
+            left: 
+              type: accesor
+              expression: smallestValue
+            right:
+              type: anyValue
 
 
 importFlows:
@@ -54,7 +53,7 @@ ownFlows:
     outputs:
       - type: number
 
-flowDefintion:
+flowDefinition:
   # Sort constant numbers and print them immediately into stdout
   application-start:
     outputs:
@@ -94,23 +93,23 @@ flowDefintion:
         outputs:
           - type: condition
             condition:
-              type: lt
+              type: gt
               left:
-                type: accesor
+                type: accessor
                 expression: smallestValue
               right:
                 type: stream
                 expression: stream
-              reactions:
-                - type: mutator
-                  expression: smallestValue
-                  value: 
-                    type: stream
-                    expression: stream
+            reactions:
+              - type: mutator
+                expression: smallestValue
+                value: 
+                  type: stream
+                  expression: stream
           - type: ends
             outputs:
               - type: intoStreamOutput
-                stream: util/smallest-number
+                stream: util/smallest-number/smallest
                 converter:
                   type: accesor
                   expression: smallestValue
