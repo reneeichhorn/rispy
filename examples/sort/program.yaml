@@ -100,12 +100,23 @@ flowDefinition:
               right:
                 type: stream
                 expression: stream
-            reactions:
+            outputs:
               - type: mutator
                 expression: smallestValue
                 value: 
                   type: stream
                   expression: stream
+              - type: intoStreamOutput
+                stream: util/smallest-number/smallest/rejected
+                converter:
+                  type: mapper
+                  mapping:
+                    stream:
+                      type: accessor
+                      expression: smallestValue
+            elseOutputs: 
+              - type: intoStreamOutput
+                stream: util/smallest-number/smallest/rejected
           - type: ends
             outputs:
               - type: intoStreamOutput
@@ -126,12 +137,10 @@ flowDefinition:
                 stream: util/smallest-number/sorting
                 converter:
                   type: none
-            delink:
-              outputs:
-                - type: ends
-                  outputs:
-                  - type: intoStream
-                    stream: util/smallest-number/sorting
-                    converter:
-                      type: none
+          - to: utl/smallest-number/smallest/declined
+            outputs:
+              - type: capture
+                outputs:
+                - type: intoStream
+                  stream: util/smallest-number/sorting
 
