@@ -4,6 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
+    "debug": "babel-node --debug-brk --inspect main.js ../../examples/sort/program.yaml",
     "demo": "babel-node main.js ../../examples/sort/program.yaml",
     "test": "echo \"Error: no test specified\" && exit 1"
   },

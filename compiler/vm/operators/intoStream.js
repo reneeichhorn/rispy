@@ -3,8 +3,13 @@ module.exports = (value, config, isEnd, streams, objects, operators, converters)
   // Execute links.
   if (config.links) {
     config.links.forEach((linkConfig) => {
-      value.on('linkedTo', (streamName, linkedValue, linkEnd) => {
-        console.log('link', linkConfig.to, streamName);
+      console.log('link establ,', linkConfig.to);
+      const linkedListener = (streamName, linkedValue, linkEnd) => {
+        if (linkEnd) {
+          console.log('link ended', linkConfig.to);
+          value.removeListener('linkedTo', linkedListener);
+        }
+        console.log('link checking', linkConfig.to, streamName);
         if (linkConfig.to === streamName) {
           linkConfig.outputs.forEach((outputConfig) => {
             operators[outputConfig.type](
@@ -18,7 +23,9 @@ module.exports = (value, config, isEnd, streams, objects, operators, converters)
             );
           });
         }
-      });
+      };
+
+      value.on('linkedTo', linkedListener);
     });
   }
 
@@ -29,14 +36,13 @@ module.exports = (value, config, isEnd, streams, objects, operators, converters)
         value,
         config.converter,
         converters,
-      ));
+      ), isEnd);
   } else {
     // Execute target stream without converting.
     streams[config.stream]
       .execute(
         value,
-        config.converter,
-        converters,
+        isEnd
       );
   }
 };

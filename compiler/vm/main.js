@@ -46,9 +46,9 @@ Object.keys(program.flowDefinition).forEach((streamName) => {
     },
 
     execute(input, isEnd) {
-      console.log(`[Execute] ${streamName} with ${JSON.stringify(input.getValue())}`);
+      console.log(`[Execute] ${streamName} with`, input.getValue());
 
-      //input.emit('used', streamName, input, isEnd);
+      input.emit('used', streamName, input, isEnd);
 
       selfConfig.outputs.forEach((outputConfig) => {
         operators[outputConfig.type](input, outputConfig, isEnd, streams, objects, operators, converters);
@@ -67,7 +67,7 @@ stdlib((name, executeSelf, onExecute) => {
   const original = streams[alias];
   streams[alias] = {
     execute(input, isEnd) {
-      console.log(`[Execute (STD)] ${alias} with ${JSON.stringify(input.getValue())}`)
+      console.log(`[Execute (STD)] ${alias} with`, input.getValue())
       //input.emit('used', alias, input, isEnd);
       onExecute(input, isEnd);
 
@@ -80,7 +80,7 @@ stdlib((name, executeSelf, onExecute) => {
     const val = executeSelf();
     if (!val) { return }
 
-    streams[alias].execute(val, false);
+    streams[alias].execute(val, true);
   });
 }, (name, converter) => {
   // Converters:
