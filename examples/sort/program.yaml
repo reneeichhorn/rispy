@@ -151,34 +151,26 @@ flowDefinition:
                     value:
                       type: accessor
                       expression:
-                        type: object
-                        name: util/smallest-number
-                        expression:
-                          type: object
-                          name: smallestValue
-                          expression:
-                            type: value
+                        type: stream
                 elseOutputs:
                   - type: intoStreamOutput
                     stream: util/smallest-number/smallest/rejected
               - type: ends
                 outputs:
-                  - type: breakpoint
                   - type: intoStreamOutput
                     stream: util/smallest-number/smallest
                     converter:
-                      type: mapper
-                      mapping:
-                        stream:
-                          type: accessor
+                      type: value
+                      value:
+                        type: accessor
+                        expression:
+                          type: object
+                          name: util/smallest-number
                           expression:
                             type: object
-                            name: util/smallest-number
+                            name: smallestValue
                             expression:
-                              type: object
-                              name: smallestValue
-                              expression:
-                                type: value
+                              type: value
   # Sort numbers ascending
   util/smallest-number/sorting:
     outputs:
@@ -187,7 +179,6 @@ flowDefinition:
         links:
           - to: util/smallest-number/smallest
             outputs:
-              - type: breakpoint
               - type: intoStreamOutput
                 stream: util/smallest-number/sorting
           - to: util/smallest-number/smallest/rejected

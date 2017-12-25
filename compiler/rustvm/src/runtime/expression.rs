@@ -25,20 +25,21 @@ pub fn object_accessor<'a>(expression: &Expression, stream: &Value<'a>, object: 
 }
 
 pub fn mutator<'a>(
-    expression: &Expression, new_value: &Value<'a>, stream: Value<'a>, state: State<'a>)
-        -> (Value<'a>, State<'a>) {
+    expression: &Expression, new_value: &Value<'a>, stream: &mut Value<'a>, state: &mut State<'a>) {
 
     match expression {
-        &Stream => (new_value.evaluate(&stream, &state), state),
+        &Stream => {
+            *stream = new_value.evaluate(&stream, &state)
+        },
         &Object { ref name, ref expression } => {
-            let mut new_state = state.clone();
-            match new_state.storage.get_mut(name) {
+            let cloned_state = state.clone();
+
+            match state.storage.get_mut(name) {
                 Some(ref mut value) => {
-                    object_mutator(expression, &new_value.evaluate(&stream, &state), value);
+                    object_mutator(expression, &new_value.evaluate(&stream, &cloned_state), value);
                 },
                 _ => panic!("Failed to mutate data: Type is a non-struct type"),
             };
-            (stream, new_state)
         },
         _ => panic!("Failed to mutate data: Expression is not allowed in this context"),
     }

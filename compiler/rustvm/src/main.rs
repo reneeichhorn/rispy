@@ -14,5 +14,6 @@ fn main() {
     debug!("Debug enabled!");
 
     let runtime = parser::create_runtime_from_configuration("../../examples/sort/program.yaml");
-    runtime.execute();
+    let mut state = runtime::state::State::new();
+    runtime.execute(&mut state);
 }
