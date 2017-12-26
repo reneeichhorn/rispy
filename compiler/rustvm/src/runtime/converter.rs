@@ -7,7 +7,7 @@ pub fn convert_value<'a>(value: &Value<'a>, converter: &'a Converter) -> Value<'
             Value::from_spec(&spec_value)
         },
         _ => {
-            error!("Failed to convert: Unimplemented converter was used");
+            error!("Failed to convert: Unimplemented converter was used: {:#?}", converter);
             value.clone()
         }
     }

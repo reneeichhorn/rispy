@@ -7,6 +7,8 @@ pub fn evaluate_condition<'a>(condition: &'a Condition, stream: &Value<'a>, stat
     match condition {
         &Gt { ref left, ref right } =>
             Value::from_spec(left).evaluate(stream, state) > Value::from_spec(right).evaluate(stream, state),
+        &Lt { ref left, ref right } =>
+            Value::from_spec(left).evaluate(stream, state) < Value::from_spec(right).evaluate(stream, state),
         &Eq { ref left, ref right } =>
             Value::from_spec(left).evaluate(stream, state) == Value::from_spec(right).evaluate(stream, state),
         _ => panic!("Failed to evaluate condition: Unimplemented condition type: {:?}", condition),

@@ -7,9 +7,11 @@ use runtime::state::State;
 use runtime::conditions::evaluate_condition;
 use runtime::expression::{ mutator };
 use runtime::links::LinkWatcher;
+use runtime::capturing::Capturer;
 use std::rc::Rc;
 use std::cell::RefCell;
 use std::collections::HashMap;
+use bindings::ExternalStream;
 
 pub mod converter;
 pub mod value;
@@ -21,6 +23,7 @@ pub mod capturing;
 
 pub struct Runtime {
     pub spec: Configuration,
+    pub external_streams: HashMap<String, Box<ExternalStream>>,
 }
 
 impl Runtime {
@@ -42,16 +45,40 @@ impl Runtime {
         return name;
     }
 
+    pub fn add_external_stream(&mut self, name: &String, stream: Box<ExternalStream>) {
+        self.external_streams.insert(name.clone(), stream);
+    }
+
     pub fn execute<'a>(&'a self, state: &mut State<'a>) {
         debug!("Executing runtime...");
 
         // Find application start
         let entry = self.reverse_resolve(String::from("core/application-start"));
-        self.execute_stream_with(state, entry, Value::Number(1), true, LinkWatcher::new());
+        self.execute_stream_with(
+            state,
+            entry,
+            Value::Number(1),
+            true,
+            LinkWatcher::new(),
+            Capturer::new(),
+        );
     }
 
-    pub fn execute_stream_with<'a>(&'a self, state: &mut State<'a>, stream: String, value: Value<'a>, end: bool, watcher: LinkWatcher<'a>) {
+    pub fn execute_stream_with<'a>(
+        &'a self,
+        state: &mut State<'a>,
+        stream: String,
+        value: Value<'a>,
+        end: bool,
+        watcher: LinkWatcher<'a>,
+        capturer: Capturer<'a>,
+    ) {
         debug!("Executing stream {} with {:?} [isEnd:{}]", stream, value, end);
+        if self.external_streams.contains_key(&stream) {
+            debug!("Found external stream defintion for '{}'", stream);
+            self.external_streams[&stream].handle_emit(value.clone(), end);
+            return;
+        }
 
         // Get stream specification
         let stream_spec = self.spec.flow_definition.get(&stream).unwrap_or_else(|| {
@@ -59,7 +86,15 @@ impl Runtime {
             process::exit(1);
         });
 
-        self.execute_spec_with(state, &stream_spec.outputs, value, end, watcher, format!("stream.{}", stream));
+        self.execute_spec_with(
+            state,
+            &stream_spec.outputs,
+            value,
+            end,
+            watcher,
+            format!("stream.{}", stream),
+            capturer,
+        );
     }
 
     pub fn execute_spec_with<'a>(
@@ -70,6 +105,7 @@ impl Runtime {
         end: bool,
         mut watcher: LinkWatcher<'a>,
         uuid: String,
+        capturer: Capturer<'a>,
     ) {
         debug!("Executing {}", uuid.clone());
         debug!("State: {:#?}", state);
@@ -92,8 +128,9 @@ impl Runtime {
                                             let mut cloned = state.clone();
                                             let cloned_watcher = watcher.clone();
                                             let mut cloned_uuid = uuid.clone();
+                                            let mut cloned_capturer = capturer.clone();
 
-                                            watcher.add_watcher(link.clone().to, Rc::new(RefCell::new(move | inner_value, inner_end | {
+                                            watcher.add_watcher(link.clone().to, uuid.clone(), Rc::new(RefCell::new(move | inner_value, inner_end | {
                                                 debug!("Link resolved to '{:}': {:?} {}", link.to, inner_value, inner_end);
                                                 self.execute_spec_with(
                                                     &mut cloned,
@@ -102,6 +139,7 @@ impl Runtime {
                                                     inner_end,
                                                     cloned_watcher.clone(),
                                                     format!("{}.{}.link.{}", cloned_uuid.clone(), outputIndex, linkIndex),
+                                                    cloned_capturer.clone(),
                                                 );
                                             })));
                                         }
@@ -110,7 +148,14 @@ impl Runtime {
                                 }
                             }
 
-                            self.execute_stream_with(state, self.resolve(stream.clone()), new_value, end, watcher.clone());
+                            self.execute_stream_with(
+                                state,
+                                self.resolve(stream.clone()),
+                                new_value,
+                                end,
+                                watcher.clone(),
+                                capturer.clone(),
+                            );
                         },
                         &MergeIntoSubstream { ref object, ref outputs, converter: _ } => {
                             // Initialize the state object if given
@@ -125,6 +170,7 @@ impl Runtime {
                                     let mut cloned = state.clone();
                                     let mut cloned_watcher = watcher.clone();
                                     let mut cloned_uuid = uuid.clone();
+                                    let cloned_capturer = capturer.clone();
 
                                     emitter.borrow_mut()(Box::new(move | inner_value, inner_end | {
                                         debug!("Merging into substream: {:?} {}", inner_value, inner_end);
@@ -136,6 +182,7 @@ impl Runtime {
                                             inner_end,
                                             cloned_watcher.clone(),
                                             format!("{}.{}.substream", cloned_uuid.clone(), outputIndex),
+                                            cloned_capturer.clone(),
                                         );
                                     }));
                                 },
@@ -152,6 +199,7 @@ impl Runtime {
                                     end,
                                     watcher.clone(),
                                     format!("{}.{}.condition.true", uuid.clone(), outputIndex),
+                                    capturer.clone(),
                                 );
                             } else {
                                 debug!("Condition was evaluated as false");
@@ -162,6 +210,7 @@ impl Runtime {
                                     end,
                                     watcher.clone(),
                                     format!("{}.{}.condition.false", uuid.clone(), outputIndex),
+                                    capturer.clone(),
                                 );
                             }
                         },
@@ -180,6 +229,7 @@ impl Runtime {
                                     end,
                                     watcher.clone(),
                                     format!("{}.{}.ends", uuid.clone(), outputIndex),
+                                    capturer.clone(),
                                 );
                             }
                         },
@@ -188,11 +238,28 @@ impl Runtime {
 
                             // Simply convert and put into stream output.
                             let mut new_value = match converter {
-                                &Some(ref converter) => converter::convert_value(&value, &converter),
+                                &Some(ref converter) => converter::convert_value(&value, &converter).evaluate(&value, &state.clone()),
                                 &None => value.clone(),
                             };
 
                             watcher.resolve_links(stream.clone(), &new_value, end);
+                        },
+                        &Capture { ref outputs, ref converter } => {
+                            match capturer.clone().capture(&uuid, &value, end) {
+                                Some(value) => {
+                                    // Simply convert and put into new stream.
+                                    self.execute_spec_with(
+                                        state,
+                                        &outputs,
+                                        value.clone(),
+                                        false,
+                                        watcher.clone(),
+                                        format!("{}.{}.capture", uuid.clone(), outputIndex),
+                                        capturer.clone(),
+                                    );
+                                },
+                                None => {},
+                            }
                         },
                         _ => {
                             error!("Failed to execute output: Unimplemented operation {:?}", output)

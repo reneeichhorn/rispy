@@ -61,6 +61,20 @@ flowDefinition:
                 value: 6
               - type: number
                 value: 1
+              - type: number
+                value: 4
+              - type: number
+                value: 1
+              - type: number
+                value: 2
+              - type: number
+                value: 8
+              - type: number
+                value: 3
+              - type: number
+                value: 6
+              - type: number
+                value: 1
         links:
           - to: util/smallest-number/sorting
             outputs:
@@ -108,7 +122,7 @@ flowDefinition:
             elseOutputs:
               - type: condition
                 condition:
-                  type: gt
+                  type: lt
                   left:
                     type: accessor
                     expression:
@@ -127,18 +141,17 @@ flowDefinition:
                   - type: intoStreamOutput
                     stream: util/smallest-number/smallest/rejected
                     converter:
-                      type: mapper
-                      mapping:
-                        stream:
-                          type: accessor
+                      type: value
+                      value:
+                        type: accessor
+                        expression:
+                          type: object
+                          name: util/smallest-number
                           expression:
                             type: object
-                            name: util/smallest-number
+                            name: smallestValue
                             expression:
-                              type: object
-                              name: smallestValue
-                              expression:
-                                type: value
+                              type: value
                   - type: mutator
                     expression:
                       type: object

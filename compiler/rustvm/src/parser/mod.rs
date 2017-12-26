@@ -2,8 +2,8 @@ use serde_yaml;
 use std::process;
 use std::fs::File;
 use specs::Configuration;
+use std::collections::HashMap;
 use runtime::Runtime;
-use runtime::state::State;
 
 pub fn create_runtime_from_configuration(path: &str) -> Runtime {
     // Parse the yaml file using the specifications.
@@ -18,5 +18,6 @@ pub fn create_runtime_from_configuration(path: &str) -> Runtime {
 
     Runtime {
         spec: config,
+        external_streams: HashMap::new(),
     }
 }

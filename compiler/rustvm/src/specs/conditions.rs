@@ -5,6 +5,6 @@ use specs::converters::Value;
 #[serde(tag = "type")]
 pub enum Condition {
     Gt { left: Value, right: Value },
-    Ll { left: Value, right: Value },
+    Lt { left: Value, right: Value },
     Eq { left: Value, right: Value },
 }
