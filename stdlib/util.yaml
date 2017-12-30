@@ -1,0 +1,46 @@
+
+objectDefinition:
+	core/util/enumerator/counter:
+		intialValue:
+			indexer: 0
+
+flowDefinition:
+	# Stream that adds enumeration to the stream
+	# targets core/util/enumerator
+	core/util/enumerator:
+		outputs:
+			- type: createObjectScope
+			  object: core/util/enumerator/counter
+			  outputs:
+			  	- type: mergeIntoSubstream
+			  	  outputs:
+			  	  	- type: intoStreamOutput
+			  	  	  stream: core/util/enumerator
+			  	  	- type: intoStream
+			  	  	  stream: plus
+			  	  	  converter:
+			  	  	  	type: mappper
+			  	  	  	mapping:
+			  	  	  		left:
+			  	  	  			type: accessor
+			  	  	  			expression:
+			  	  	  				type: object
+			  	  	  				name: indexer
+			  	  	  		right:
+			  	  	  			type: number
+			  	  	  			value: 1
+			  	  	  links:
+			  	  	  	- to: plus
+			  	  	  	  outputs:
+					  	  	- type: mutator
+					  	  	  expression:
+					  	  	  	type: accessor
+					  	  	  	expression:
+					  	  	  		type: object
+					  	  	  		name: indexer
+					 		  value:
+					 		  	type: stream
+
+
+
+
